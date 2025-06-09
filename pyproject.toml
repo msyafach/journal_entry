@@ -1,0 +1,16 @@
+[project]
+name = "jet-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django==4.2.7",
+    "django-cors-headers==4.3.1",
+    "djangorestframework==3.14.0",
+    "openpyxl==3.1.2",
+    "pandas==2.1.3",
+    "pillow==10.1.0",
+    "pypdf2==3.0.1",
+    "python-magic-bin>=0.4.14",
+]

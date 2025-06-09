@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Upload Journal Entry Files</h2>
+        <p class="text-muted">Supported formats: PDF, TXT, CSV, Excel (.xlsx, .xls)</p>
+        
+        <form method="post" enctype="multipart/form-data" class="mb-4">
+            {% csrf_token %}
+            <div class="mb-3">
+                {{ form.file.label_tag }}
+                {{ form.file }}
+                {% if form.file.errors %}
+                    <div class="text-danger">
+                        {% for error in form.file.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary">Upload File</button>
+        </form>
+
+        <div class="alert alert-info">
+            <h6>File Format Guidelines:</h6>
+            <ul class="mb-0">
+                <li><strong>CSV/Excel:</strong> Should contain columns like: title, amount, date, account, type</li>
+                <li><strong>TXT:</strong> Use format: "YYYY-MM-DD | Title | Amount | Type" (pipe-separated)</li>
+                <li><strong>PDF:</strong> Will extract text and attempt to parse journal entries</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <h4>Recent Uploads</h4>
+        {% for upload in recent_uploads %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <h6 class="card-title">{{ upload.original_filename }}</h6>
+                <p class="card-text">
+                    <small class="text-muted">{{ upload.uploaded_at|date:"M d, Y H:i" }}</small><br>
+                    <span class="badge bg-{{ upload.status == 'completed' and 'success' or upload.status == 'failed' and 'danger' or 'warning' }}">
+                        {{ upload.get_status_display }}
+                    </span>
+                    {% if upload.processed_entries_count > 0 %}
+                        <br><small>{{ upload.processed_entries_count }} entries created</small>
+                    {% endif %}
+                </p>
+                <button class="btn btn-sm btn-outline-primary" onclick="checkStatus('{{ upload.id }}')">
+                    Check Status
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">No files uploaded yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">File Processing Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="statusContent">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function checkStatus(fileId) {
+    fetch(`/file-status/${fileId}/`)
+        .then(response => response.json())
+        .then(data => {
+            let content = `
+                <p><strong>Status:</strong> ${data.status}</p>
+                <p><strong>Processed Entries:</strong> ${data.processed_entries}</p>
+            `;
+            
+            if (data.error_message) {
+                content += `<p><strong>Error:</strong> ${data.error_message}</p>`;
+            }
+            
+            if (data.logs && data.logs.length > 0) {
+                content += '<h6>Processing Logs:</h6><ul>';
+                data.logs.forEach(log => {
+                    content += `<li class="text-${log.level === 'error' ? 'danger' : log.level === 'warning' ? 'warning' : 'info'}">
+                        ${log.message} <small>(${new Date(log.timestamp).toLocaleString()})</small>
+                    </li>`;
+                });
+                content += '</ul>';
+            }
+            
+            document.getElementById('statusContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('statusModal')).show();
+        })
+        .catch(error => {
+            document.getElementById('statusContent').innerHTML = `<p class="text-danger">Error loading status: ${error}</p>`;
+            new bootstrap.Modal(document.getElementById('statusModal')).show();
+        });
+}
+</script>
+{% endblock %}
