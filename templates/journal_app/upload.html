@@ -40,9 +40,13 @@
                 <h6 class="card-title">{{ upload.original_filename }}</h6>
                 <p class="card-text">
                     <small class="text-muted">{{ upload.uploaded_at|date:"M d, Y H:i" }}</small><br>
-                    <span class="badge bg-{{ upload.status == 'completed' and 'success' or upload.status == 'failed' and 'danger' or 'warning' }}">
-                        {{ upload.get_status_display }}
-                    </span>
+                    {% if upload.status == 'completed' %}
+                        <span class="badge bg-success">{{ upload.get_status_display }}</span>
+                    {% elif upload.status == 'failed' %}
+                        <span class="badge bg-danger">{{ upload.get_status_display }}</span>
+                    {% else %}
+                        <span class="badge bg-warning">{{ upload.get_status_display }}</span>
+                    {% endif %}
                     {% if upload.processed_entries_count > 0 %}
                         <br><small>{{ upload.processed_entries_count }} entries created</small>
                     {% endif %}
